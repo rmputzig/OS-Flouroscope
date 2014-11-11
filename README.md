@@ -7,8 +7,8 @@ The data is then recorded on an SD Card using an Arduino. The LED is easily swap
 
 More details will be posted as they became available.
 
-Note: this is an adaptation of an open source colorometer: http://www.appropedia.org/Open-source_colorimeter
------------------
+Note: This is an adaptation of an open source colorometer: http://www.appropedia.org/Open-source_colorimeter
+
 Bill of Materials
 -----------------
 - Black ABS or PLA filament
