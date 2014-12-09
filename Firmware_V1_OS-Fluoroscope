@@ -1,0 +1,192 @@
+// include the library code:
+#include <Wire.h>
+
+#include <Adafruit_RGBLCDShield.h>
+#include <SD.h>
+static uint32_t sensor, ref;
+static uint16_t measure_time = 1000;
+
+/*Pinout List
+NOTE: SD and LCD Share I2C Bus
+
+11 MOSI 11
+12 MISO 12
+13 CLK 13
+14 CLK 14
+10 CH S 10
+
+Frequency Counter Color Code
+
+Pin Color    Ref
+3   Purple   sensitivy select
+4   Orange   sensitivity select
+2   Yellow   output 2scaled-frequency
+5V  Red
+Gnd Green    OE/GND
+5   Black    scaling select
+6   Grey     scaling select
+
+
+*/
+
+/*
+  Code comes from the arduino example library
+  SD card datalogger Properties
+ This example shows how to log data from three analog sensors 
+ to an SD card using the SD library.	
+ The circuit:
+ * analog sensors on analog ins 0, 1, and 2
+ * SD card attached to SPI bus as follows:
+ ** MOSI - pin 11
+ ** MISO - pin 12
+ ** CLK - pin 13
+ ** CS - pin 10 (For installed Shield)
+ created  24 Nov 2010
+ modified 9 Apr 2012
+ by Tom Igoe
+ This example code is in the public domain.
+ 
+ 
+ LCD Properties 
+ // The shield uses the I2C SCL and SDA pins. On classic Arduinos
+// this is Analog 4 and 5 so you can't use those for analogRead() anymore
+// However, you can connect other I2C sensors to the I2C bus and share
+// the I2C bus.
+ */
+
+
+//Initialization
+//SD
+Sd2Card card;
+SdVolume volume;
+SdFile root;
+const int chipSelect = 10;
+int count;
+unsigned long mn;
+unsigned long mo;
+float number;
+float irradiance;//comes out in microW/cm^2
+//Frequency Counter Scaling
+
+
+//LCD
+Adafruit_RGBLCDShield lcd = Adafruit_RGBLCDShield();
+#define RED 0x1
+#define YELLOW 0x3
+#define GREEN 0x2
+#define TEAL 0x6
+#define BLUE 0x4
+#define VIOLET 0x5
+#define WHITE 0x7
+
+void setup()
+{
+
+  
+  //Sensor Scaling and Sensitivity
+  //For configuring sensor
+  // Visit http://www.mouser.com/ProductDetail/ams/TSL230RD/?qs=Mty3Fo4ApVjWJHVPSIbomg%3D%3D
+  pinMode(2, INPUT);
+  pinMode(3, OUTPUT); //Sensitivity select
+  pinMode(4, OUTPUT); //Sensitivity select
+  pinMode(5, OUTPUT); //Scaling select
+  pinMode(6, OUTPUT); //Scaling select
+  digitalWrite(3, HIGH);
+  digitalWrite(4, HIGH);
+  digitalWrite(5, HIGH);
+  digitalWrite(6, HIGH);
+//End Sensor Scaling and Sensitivity
+
+   
+ // Open serial communications and wait for port to open:
+  Serial.begin(9600);
+  Serial.print("Initializing SD card...");
+  // make sure that the default chip select pin is set to
+  // output, even if you don't use it:
+  pinMode(10, OUTPUT);
+  // see if the card is present and can be initialized:
+  if (!SD.begin(chipSelect)) {
+    Serial.println("Card failed, or not present");
+   lcd.begin(16, 2);
+   lcd.setCursor(0, 1);
+   lcd.print("Card ?");
+  lcd.setBacklight(RED);
+    // don't do anything more:
+    return;
+  }
+  Serial.println("card initialized.");
+  
+    // set up the LCD's number of columns and rows: 
+  lcd.begin(16, 2);
+  lcd.print("Card and Sensor");
+    lcd.setCursor(0, 1);
+    lcd.print("nothing");
+  lcd.setBacklight(VIOLET);
+}
+///////////////////////
+//////////////////////
+//The Good Stuff
+///////////////////////
+
+
+void loop()
+{uint8_t buttons = lcd.readButtons();
+mn=millis();
+count = count+digitalRead(2);
+if((mn-mo)>=10000){
+irradiance=count;//no conversion factor required if mn-mo>=10000 and Scaling is set to So=H S1=H
+count=0;
+mo=mn;
+
+}
+Serial.println(irradiance);
+
+
+if (buttons) {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    
+    if (buttons & BUTTON_SELECT) {
+
+   
+   lcd.setCursor(1,0 );
+   lcd.print(irradiance);
+   Serial.println(irradiance);
+   lcd.setCursor(0, 1);
+   lcd.print("umW/cm^2");
+   lcd.setCursor(0,10);
+   lcd.print(number);
+
+
+  // open the file. note that only one file can be open at a time,
+  // so you have to close this one before opening another.
+  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+
+  // if the file is available, write to it:
+  if (dataFile) {
+    
+    dataFile.print(number);
+    dataFile.println(irradiance);
+    dataFile.close();
+    number=number+1;
+    // print to the serial port too:
+    //Serial.println(data);
+  }  
+  // if the file isn't open, pop up an error:
+  else {
+    Serial.println("error opening datalog.txt");
+  } 
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
